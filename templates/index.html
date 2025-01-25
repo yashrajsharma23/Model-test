@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Model and Test Images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f7f7f7;
+        }
+        h1 {
+            color: #333;
+        }
+        .upload-box {
+            border: 2px dashed #bbb;
+            border-radius: 10px;
+            width: 300px;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background-color: #fff;
+            margin-bottom: 20px;
+        }
+        .upload-box:hover {
+            border-color: #555;
+        }
+        .upload-box p {
+            color: #777;
+            font-size: 14px;
+            text-align: center;
+        }
+        .output {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Model and Test Images</h1>
+
+    <!-- Model Upload Box -->
+    <div id="modelUploadBox" class="upload-box">
+        <p>Click or drag and drop your model (.h5) file here</p>
+        <input id="modelInput" type="file" accept=".h5">
+    </div>
+    <button id="uploadModelButton">Upload Model</button>
+    <div id="modelResponse" class="output"></div>
+
+    <!-- Image Upload Box -->
+    <div id="imageUploadBox" class="upload-box">
+        <p>Click or drag and drop your image file here</p>
+        <input id="imageInput" type="file" accept="image/*">
+    </div>
+    <button id="uploadImageButton">Upload Image</button>
+    <div id="imageResponse" class="output"></div>
+
+    <script>
+        const modelUploadBox = document.getElementById('modelUploadBox');
+        const imageUploadBox = document.getElementById('imageUploadBox');
+        const modelInput = document.getElementById('modelInput');
+        const imageInput = document.getElementById('imageInput');
+        const modelResponse = document.getElementById('modelResponse');
+        const imageResponse = document.getElementById('imageResponse');
+        let modelFile = null;
+        let imageFile = null;
+
+        // Common drag-and-drop handler
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.style.borderColor = '#007bff';
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.style.borderColor = '#bbb';
+        }
+
+        function handleDrop(event, input) {
+            event.preventDefault();
+            const file = event.dataTransfer.files[0];
+            input.files = event.dataTransfer.files; // Update the hidden input
+            event.currentTarget.querySelector('p').textContent = file.name;
+            event.currentTarget.style.borderColor = '#28a745';
+        }
+
+        // Model box events
+        modelUploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            modelUploadBox.style.borderColor = '#007bff';
+        });
+
+        modelUploadBox.addEventListener('dragleave', () => {
+            modelUploadBox.style.borderColor = '#bbb';
+        });
+
+        modelUploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            modelFile = e.dataTransfer.files[0];
+            modelUploadBox.querySelector('p').textContent = modelFile.name;
+            modelUploadBox.style.borderColor = '#28a745';
+        });
+        modelUploadBox.addEventListener('click', () => modelInput.click());
+        modelInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                modelUploadBox.querySelector('p').textContent = file.name;
+                modelFile = file;
+            }
+        });
+
+        // Image box events
+        // Drag and drop handlers for the image
+        imageUploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imageUploadBox.style.borderColor = '#007bff';
+        });
+
+        imageUploadBox.addEventListener('dragleave', () => {
+            imageUploadBox.style.borderColor = '#bbb';
+        });
+
+        imageUploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imageFile = e.dataTransfer.files[0];
+            imageUploadBox.querySelector('p').textContent = imageFile.name;
+            imageUploadBox.style.borderColor = '#28a745';
+        });
+
+        imageUploadBox.addEventListener('click', () => imageInput.click());
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                imageUploadBox.querySelector('p').textContent = file.name;
+                imageFile = file;
+            }
+        });
+
+        // Upload Model button
+        document.getElementById('uploadModelButton').addEventListener('click', () => {
+            if (!modelFile) {
+                alert('Please upload a model file first.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('model', modelFile);
+
+            fetch('/upload_model', { method: 'POST', body: formData })
+                .then((res) => res.json())
+                .then((data) => {
+                    modelResponse.textContent = JSON.stringify(data.message).replace(/\"/gi, "");
+                })
+                .catch((err) => {
+                    modelResponse.textContent = JSON.stringify("Error uploading model").replace(/\"/gi, "");
+                    console.error(err);
+                });
+        });
+
+        // Upload Image button
+        document.getElementById('uploadImageButton').addEventListener('click', () => {
+            if (!imageFile) {
+                alert('Please upload an image file first.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', imageFile);
+
+            fetch('/predict', { method: 'POST', body: formData })
+                .then((res) => res.json())
+                .then((data) => {
+                    imageResponse.textContent = JSON.stringify("Predicted class: "+ data.predicted_class + " and Probability: "+data.confidence).replace(/\"/gi, "");
+                })
+                .catch((err) => {
+                    imageResponse.textContent = JSON.stringify("Error uploading image").replace(/\"/gi, "");
+                    console.error(err);
+                });
+        });
+    </script>
+</body>
+</html>
