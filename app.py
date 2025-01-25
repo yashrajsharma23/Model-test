@@ -4,7 +4,8 @@ import tensorflow as tf
 from werkzeug.utils import secure_filename
 import numpy as np
 from PIL import Image
-import json
+
+
 app = Flask(__name__)
 
 # Configure upload folders
@@ -19,7 +20,7 @@ ALLOWED_EXTENSIONS_IMAGE = {'png', 'jpg', 'jpeg', 'tif'}
 
 # In-memory storage for uploaded model
 current_model = None
-CLASS_NAMES = ['EC', 'SA']  
+CLASS_NAMES = ['EC', 'SA'] 
 
 
 def allowed_file(filename, allowed_extensions):
